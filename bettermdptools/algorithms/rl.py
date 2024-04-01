@@ -72,7 +72,7 @@ class RL:
         values = np.pad(values, (0, rem_steps), 'edge')
         return values
 
-    @print_runtime
+    # @print_runtime
     def q_learning(self,
                    nS=None,
                    nA=None,
@@ -194,7 +194,7 @@ class RL:
         pi = {s: a for s, a in enumerate(np.argmax(Q, axis=1))}
         return Q, V, pi, Q_track, pi_track
 
-    @print_runtime
+    # @print_runtime
     def sarsa(self,
               nS=None,
               nA=None,

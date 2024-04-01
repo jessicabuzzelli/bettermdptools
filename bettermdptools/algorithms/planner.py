@@ -59,6 +59,7 @@ class Planner:
         """
         V = np.zeros(len(self.P), dtype=np.float64)
         V_track = np.zeros((n_iters, len(self.P)), dtype=np.float64)
+        pi_track = np.zeros((n_iters, len(self.P)), dtype=np.float64)
         i = 0
         converged = False
         while i < n_iters-1 and not converged:
@@ -72,11 +73,14 @@ class Planner:
                 converged = True
             V = np.max(Q, axis=1)
             V_track[i] = V
+            pi = {s: a for s, a in enumerate(np.argmax(Q, axis=1))}
+            pi_track[i] = np.array(list(pi.values()))
+
         if not converged:
             warnings.warn("Max iterations reached before convergence.  Check theta and n_iters.  ")
 
         pi = {s:a for s, a in enumerate(np.argmax(Q, axis=1))}
-        return V, V_track, pi
+        return V, V_track, pi, pi_track
 
     # @print_runtime
     def policy_iteration(self, gamma=1.0, n_iters=50, theta=1e-10):
@@ -112,6 +116,7 @@ class Planner:
         # initial V to give to `policy_evaluation` for the first time
         V = np.zeros(len(self.P), dtype=np.float64)
         V_track = np.zeros((n_iters, len(self.P)), dtype=np.float64)
+        pi_track = np.zeros((n_iters, len(self.P)), dtype=np.float64)
         i = 0
         converged = False
         while i < n_iters-1 and not converged:
@@ -120,11 +125,12 @@ class Planner:
             V = self.policy_evaluation(pi, V, gamma, theta)
             V_track[i] = V
             pi = self.policy_improvement(V, gamma)
+            pi_track[i] = np.array(list(pi.values()))
             if old_pi == pi:
                 converged = True
         if not converged:
             warnings.warn("Max iterations reached before convergence.  Check n_iters.")
-        return V, V_track, pi
+        return V, V_track, pi, pi_track
 
     def policy_evaluation(self, pi, prev_V, gamma=1.0, theta=1e-10):
         while True:

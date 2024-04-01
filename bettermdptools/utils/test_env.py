@@ -12,6 +12,7 @@ Simulation of the agent's decision process after it has learned a policy.
 import gymnasium as gym
 import pygame
 import numpy as np
+from tqdm import tqdm
 
 
 class TestEnv:
@@ -19,7 +20,7 @@ class TestEnv:
         pass
 
     @staticmethod
-    def test_env(env, desc=None, render=False, n_iters=10, pi=None, user_input=False, convert_state_obs=lambda state: state):
+    def test_env(env, desc=None, render=False, n_iters=10, pi=None, user_input=False, convert_state_obs=lambda state: state, verbose=False):
         """
         Parameters
         ----------------------------
@@ -52,7 +53,10 @@ class TestEnv:
                 env = gym.make(env_name, desc=desc, render_mode='human')
         n_actions = env.action_space.n
         test_scores = np.full([n_iters], np.nan)
-        for i in range(0, n_iters):
+        iterator = range(n_iters)
+        if verbose:
+            iterator = tqdm(iterator)
+        for i in iterator:
             state, info = env.reset()
             done = False
             state = convert_state_obs(state)
@@ -76,6 +80,8 @@ class TestEnv:
                 else:
                     action = pi[state]
                 next_state, reward, terminated, truncated, info = env.step(action)
+                if truncated and verbose:
+                    print("truncated!") 
                 done = terminated or truncated
                 next_state = convert_state_obs(next_state)
                 state = next_state

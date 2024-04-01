@@ -28,10 +28,11 @@ import warnings
 
 
 class RL:
-    def __init__(self, env):
+    def __init__(self, env, exploration_method):
         self.env = env
         self.callbacks = MyCallbacks()
         self.render = False
+        self.exploration_method = exploration_method
 
     @staticmethod
     def decay_schedule(init_value, min_value, decay_ratio, max_steps, log_start=-2, log_base=10):
@@ -84,6 +85,7 @@ class RL:
                    init_epsilon=1.0,
                    min_epsilon=0.1,
                    epsilon_decay_ratio=0.9,
+                   tau=1.0,
                    n_episodes=10000):
         """
         Parameters
@@ -140,6 +142,7 @@ class RL:
         pi_track {list}, len(n_episodes):
             Log of complete policy for each episode
         """
+        self.tau = tau
         if nS is None:
             nS=self.env.observation_space.n
         if nA is None:
@@ -153,9 +156,23 @@ class RL:
         #       return np.argmax(Q[state])
         #   else:
         #       return np.random.randint(len(Q[state]))
-        select_action = lambda state, Q, epsilon: np.argmax(Q[state]) \
-            if np.random.random() > epsilon \
-            else np.random.randint(len(Q[state]))
+        def softmax(x):
+            e_x = np.exp(x / self.tau)
+            return e_x / e_x.sum()
+
+        def select_action(state, Q, epsilon): 
+            if self.exploration_method == 'greedy':
+                if np.random.random() > epsilon:
+                    return np.argmax(Q[state])
+                else:
+                    return np.random.randint(len(Q[state]))
+            elif self.exploration_method == 'boltzman':
+                return np.random.choice(np.arange(nA), p=softmax(Q[state]))
+            elif self.exploration_method == 'thompson':
+                return np.argmax(np.random.normal(Q[state], 1))
+            else:
+                raise ValueError("Exploration method not recognized.  Please use 'greedy', 'boltzman', or 'thompson'.")
+            
         alphas = RL.decay_schedule(init_alpha,
                                 min_alpha,
                                 alpha_decay_ratio,

@@ -13,14 +13,14 @@ import gymnasium as gym
 import pygame
 import numpy as np
 from tqdm import tqdm
-
+from statistics import mean
 
 class TestEnv:
     def __init__(self):
         pass
 
     @staticmethod
-    def test_env(env, desc=None, render=False, n_iters=10, pi=None, user_input=False, convert_state_obs=lambda state: state, verbose=False):
+    def test_env(env, desc=None, render=False, n_iters=10, pi=None, user_input=False, moves_limit=10000, convert_state_obs=lambda state: state, verbose=False):
         """
         Parameters
         ----------------------------
@@ -54,6 +54,7 @@ class TestEnv:
         n_actions = env.action_space.n
         test_scores = np.full([n_iters], np.nan)
         iterator = range(n_iters)
+        moves_per_episode = []
         if verbose:
             iterator = tqdm(iterator)
         for i in iterator:
@@ -61,6 +62,7 @@ class TestEnv:
             done = False
             state = convert_state_obs(state)
             total_reward = 0
+            move = 0
             while not done:
                 if user_input:
                     # get user input and suggest policy output
@@ -82,10 +84,12 @@ class TestEnv:
                 next_state, reward, terminated, truncated, info = env.step(action)
                 if truncated and verbose:
                     print("truncated!") 
-                done = terminated or truncated
+                done = terminated or truncated or move > moves_limit
                 next_state = convert_state_obs(next_state)
                 state = next_state
                 total_reward = reward + total_reward
+                move += 1
             test_scores[i] = total_reward
+            moves_per_episode.append(move)
         env.close()
-        return test_scores
+        return test_scores, moves_per_episode
